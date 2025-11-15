@@ -23,6 +23,14 @@ app.get('/', (req, res) => {
   res.send('Hello!');
 });
 
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    uptime: process.uptime()
+  });
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log('Server runs on http://localhost:' + PORT);
