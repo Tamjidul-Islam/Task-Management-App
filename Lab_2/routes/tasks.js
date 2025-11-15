@@ -53,11 +53,12 @@ router.post('/tasks', (req, res) => {
   }
 });
 
-// GET /task/:id - Get one task by ID
+// GET /task/:id - Get one task by ID with error handling
 router.get('/task/:id', (req, res) => {
   const idParam = req.params.id;
   const taskId = parseInt(idParam);
 
+  // New check for bad ID format
   if (isNaN(taskId)) {
     return res.status(400).json({
       error: 'Invalid ID format'
