@@ -3,27 +3,16 @@ const taskRouter = require('./routes/tasks');
 
 const app = express();
 
-// In-memory storage (will be replaced by MySQL in LAB 3)
-const tasks = [
-  { id: 1, title: 'Learn Node.js', completed: false, priority: 'high', createdAt: new Date() },
-  { id: 2, title: 'Build REST API', completed: false, priority: 'high', createdAt: new Date() },
-  { id: 3, title: 'Read Express docs', completed: false, priority: 'medium', createdAt: new Date() },
-  { id: 4, title: 'Write README', completed: false, priority: 'low', createdAt: new Date() },
-  { id: 5, title: 'Test with Postman', completed: false, priority: 'medium', createdAt: new Date() }
-];
-
-app.locals.tasks = tasks; // Attach to app for route access
-
 app.use(express.json()); // Parses application/json
 
-app.use('/tasks', taskRouter);
+app.use('/', taskRouter); // Mount router at root so paths in tasks.js work
 
-// Add this new route for the main page
+// Hello message for main page
 app.get('/', (req, res) => {
   res.send('Hello!');
 });
 
-
+// GET /health - Show server status and uptime
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',

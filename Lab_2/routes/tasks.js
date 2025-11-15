@@ -1,21 +1,29 @@
 const express = require('express');
 const router = express.Router();
 
-// GET /tasks - Retrieve all tasks
-router.get('/', (req, res) => {
-  const tasks = req.app.locals.tasks;
+// In-memory storage (moved from server.js)
+const tasks = [
+  { id: 1, title: 'Learn Node.js', completed: false, priority: 'high', createdAt: new Date() },
+  { id: 2, title: 'Build REST API', completed: false, priority: 'high', createdAt: new Date() },
+  { id: 3, title: 'Read Express docs', completed: false, priority: 'medium', createdAt: new Date() },
+  { id: 4, title: 'Write README', completed: false, priority: 'low', createdAt: new Date() },
+  { id: 5, title: 'Test with Postman', completed: false, priority: 'medium', createdAt: new Date() }
+];
+
+// GET /tasks - Get all tasks
+router.get('/tasks', (req, res) => {
   res.status(200).json({
     success: true,
     data: tasks
   });
 });
 
-// POST /tasks - Create a new task
-router.post('/', (req, res) => {
+// POST /tasks - Add a new task
+router.post('/tasks', (req, res) => {
   try {
     const { title } = req.body;
 
-    // Input validation
+    // Check if title is good
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return res.status(400).json({
         success: false,
@@ -24,14 +32,13 @@ router.post('/', (req, res) => {
     }
 
     const newTask = {
-      id: Date.now(), // Simple ID (replace with auto-increment in DB)
+      id: Date.now(),
       title: title.trim(),
       completed: false,
-      priority: 'medium',  // Default priority
-      createdAt: new Date()  // Current date
+      priority: 'medium',
+      createdAt: new Date()
     };
 
-    const tasks = req.app.locals.tasks;
     tasks.push(newTask);
 
     res.status(201).json({
@@ -46,10 +53,17 @@ router.post('/', (req, res) => {
   }
 });
 
-// New: GET /tasks/:id - Get one task by ID
-router.get('/:id', (req, res) => {
-  const taskId = parseInt(req.params.id);  // Turn ID to number
-  const tasks = req.app.locals.tasks;
+// GET /task/:id - Get one task by ID
+router.get('/task/:id', (req, res) => {
+  const idParam = req.params.id;
+  const taskId = parseInt(idParam);
+
+  if (isNaN(taskId)) {
+    return res.status(400).json({
+      error: 'Invalid ID format'
+    });
+  }
+
   const task = tasks.find(t => t.id === taskId);
 
   if (task) {
