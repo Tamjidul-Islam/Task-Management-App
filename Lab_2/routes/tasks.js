@@ -26,7 +26,9 @@ router.post('/', (req, res) => {
     const newTask = {
       id: Date.now(), // Simple ID (replace with auto-increment in DB)
       title: title.trim(),
-      completed: false
+      completed: false,
+      priority: 'medium',  // Default priority
+      createdAt: new Date()  // Current date
     };
 
     const tasks = req.app.locals.tasks;
@@ -40,6 +42,24 @@ router.post('/', (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Internal server error'
+    });
+  }
+});
+
+// New: GET /tasks/:id - Get one task by ID
+router.get('/:id', (req, res) => {
+  const taskId = parseInt(req.params.id);  // Turn ID to number
+  const tasks = req.app.locals.tasks;
+  const task = tasks.find(t => t.id === taskId);
+
+  if (task) {
+    res.status(200).json({
+      success: true,
+      data: task
+    });
+  } else {
+    res.status(404).json({
+      error: 'Task not found'
     });
   }
 });
