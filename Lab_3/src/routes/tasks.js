@@ -3,7 +3,7 @@ const router = express.Router();
 
 const db = require('../../config/db');
 
-// GET all tasks with page, limit, and search
+// GET all tasks with page, limit, search, hide deleted
 router.get('/', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -13,13 +13,13 @@ router.get('/', async (req, res) => {
     }
 
     const start = (page - 1) * limit;
-    const search = `%${req.query.q || ''}%`; // For finding words in title
+    const search = `%${req.query.q || ''}%`;
 
-    const [total] = await db.query('SELECT COUNT(*) AS count FROM tasks WHERE title LIKE ?', [search]);
+    const [total] = await db.query('SELECT COUNT(*) AS count FROM tasks WHERE title LIKE ? AND deleted_at IS NULL', [search]);
     const totalTasks = total[0].count;
     const totalPages = Math.ceil(totalTasks / limit);
 
-    const [rows] = await db.query('SELECT * FROM tasks WHERE title LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [search, limit, start]);
+    const [rows] = await db.query('SELECT * FROM tasks WHERE title LIKE ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?', [search, limit, start]);
 
     res.json({
       totalTasks,
@@ -84,12 +84,12 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE remove a task
+// DELETE mark as deleted (soft)
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [result] = await db.query('DELETE FROM tasks WHERE id = ?', [id]);
+    const [result] = await db.query('UPDATE tasks SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL', [id]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -97,6 +97,35 @@ router.delete('/:id', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// GET see deleted tasks
+router.get('/deleted', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM tasks WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// PUT bring back deleted task (restore)
+router.put('/:id/restore', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await db.query('UPDATE tasks SET deleted_at = NULL WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const [restored] = await db.query('SELECT * FROM tasks WHERE id = ?', [id]);
+    res.json(restored[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to restore task' });
   }
 });
 
