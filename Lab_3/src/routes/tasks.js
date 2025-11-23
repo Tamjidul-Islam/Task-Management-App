@@ -1,7 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const winston = require('winston');
 
 const db = require('../../config/db');
+
+// Setup for saving errors in file
+const logger = winston.createLogger({
+  level: 'error',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log' })
+  ]
+});
 
 // GET all tasks with page, limit, search, hide deleted
 router.get('/', async (req, res) => {
@@ -29,7 +39,7 @@ router.get('/', async (req, res) => {
       data: rows
     });
   } catch (err) {
-    console.error(err);
+    logger.error(err); // Save error in file
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -47,7 +57,7 @@ router.post('/', async (req, res) => {
     const [newTask] = await db.query('SELECT * FROM tasks WHERE id = ?', [result.insertId]);
     res.status(201).json(newTask[0]);
   } catch (err) {
-    console.error(err);
+    logger.error(err); // Save error in file
     res.status(500).json({ error: 'Failed to create task' });
   }
 });
@@ -79,12 +89,12 @@ router.put('/:id', async (req, res) => {
     const [updated] = await db.query('SELECT * FROM tasks WHERE id = ?', [id]);
     res.json(updated[0]);
   } catch (err) {
-    console.error(err);
+    logger.error(err); // Save error in file
     res.status(500).json({ error: 'Failed to update task' });
   }
 });
 
-// DELETE mark as deleted (soft)
+// DELETE mark as deleted
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -95,7 +105,7 @@ router.delete('/:id', async (req, res) => {
     }
     res.status(204).send();
   } catch (err) {
-    console.error(err);
+    logger.error(err); // Save error in file
     res.status(500).json({ error: 'Failed to delete task' });
   }
 });
@@ -106,7 +116,7 @@ router.get('/deleted', async (req, res) => {
     const [rows] = await db.query('SELECT * FROM tasks WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    logger.error(err); // Save error in file
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -124,7 +134,7 @@ router.put('/:id/restore', async (req, res) => {
     const [restored] = await db.query('SELECT * FROM tasks WHERE id = ?', [id]);
     res.json(restored[0]);
   } catch (err) {
-    console.error(err);
+    logger.error(err); // Save error in file
     res.status(500).json({ error: 'Failed to restore task' });
   }
 });
