@@ -3,22 +3,23 @@ const router = express.Router();
 
 const db = require('../../config/db');
 
-// GET all tasks with pagination
+// GET all tasks with page, limit, and search
 router.get('/', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; // Default page 1
-    const limit = parseInt(req.query.limit) || 10; // Default limit 10
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
     if (limit > 50) {
       return res.status(400).json({ error: 'Limit max 50' });
     }
 
-    const offset = (page - 1) * limit; // Calculate start point
+    const start = (page - 1) * limit;
+    const search = `%${req.query.q || ''}%`; // For finding words in title
 
-    const [totalRows] = await db.query('SELECT COUNT(*) AS count FROM tasks');
-    const totalTasks = totalRows[0].count;
+    const [total] = await db.query('SELECT COUNT(*) AS count FROM tasks WHERE title LIKE ?', [search]);
+    const totalTasks = total[0].count;
     const totalPages = Math.ceil(totalTasks / limit);
 
-    const [rows] = await db.query('SELECT * FROM tasks ORDER BY created_at DESC LIMIT ? OFFSET ?', [limit, offset]);
+    const [rows] = await db.query('SELECT * FROM tasks WHERE title LIKE ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [search, limit, start]);
 
     res.json({
       totalTasks,
@@ -33,7 +34,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST create new task
+// POST add a new task
 router.post('/', async (req, res) => {
   const { title, description } = req.body;
   if (!title || title.trim() === '') {
@@ -51,7 +52,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update task
+// PUT change a task
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { title, description, status } = req.body;
@@ -83,7 +84,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE task
+// DELETE remove a task
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
