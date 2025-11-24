@@ -1,0 +1,1 @@
+{"code":"ER_TRUNCATED_WRONG_VALUE","errno":1292,"level":"error","message":"Truncated incorrect DOUBLE value: 'deleted'","sql":"UPDATE tasks SET deleted_at = NOW() WHERE id = 'deleted' AND deleted_at IS NULL","sqlMessage":"Truncated incorrect DOUBLE value: 'deleted'","sqlState":"22007"}
